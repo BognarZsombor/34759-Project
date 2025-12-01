@@ -1,0 +1,36 @@
+import os
+
+# --- Set your directories ---
+images_dir = r"C:\Users\emilt\Desktop\train_yolo_55\val\image_val_2"
+labels_dir = r"C:\Users\emilt\Desktop\train_yolo_55\val\Yolo_valset_2"
+
+# Find all image and label files
+image_files = sorted([
+    f for f in os.listdir(images_dir)
+    if f.lower().endswith(('.jpg', '.jpeg', '.png'))
+])
+label_files = sorted([
+    f for f in os.listdir(labels_dir)
+    if f.lower().endswith('.txt')
+])
+
+print(f"Found {len(image_files)} images and {len(label_files)} labels")
+
+if not image_files:
+    print("No image files found. Check 'images_dir'.")
+elif not label_files:
+    print("No label files found. Check 'labels_dir'.")
+else:
+    if len(image_files) != len(label_files):
+        print(f"Count mismatch ({len(image_files)} images, {len(label_files)} labels).")
+        print("Labels will still be renamed in sorted order.\n")
+
+    # Rename labels to match image names
+    for img, lbl in zip(image_files, label_files):
+        new_name = os.path.splitext(img)[0] + '.txt'
+        old_path = os.path.join(labels_dir, lbl)
+        new_path = os.path.join(labels_dir, new_name)
+        os.rename(old_path, new_path)
+        print(f"{lbl} → {new_name}")
+
+    print("Done")

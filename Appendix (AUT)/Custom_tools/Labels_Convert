@@ -1,0 +1,104 @@
+import os
+from pathlib import Path
+
+CLASSES = {
+    'Car': 0,
+    'Cyclist': 1,
+    'Pedestrian': 2
+}
+
+def convert_kitti_to_yolo(kitti_label_path, yolo_label_path, img_width, img_height):
+    """
+    Converts a KITTI label file to YOLO format. Supports both standard KITTI
+    and extended KITTI with extra leading columns.
+    """
+    with open(kitti_label_path, 'r') as f:
+        lines = f.readlines()
+    
+    yolo_labels = []
+    
+    for line in lines:
+        parts = line.strip().split()
+        if len(parts) < 8:
+            continue
+        
+        class_name = None
+        bbox_start = None
+        
+        if parts[0] in CLASSES:
+            class_name = parts[0]
+            bbox_start = 4
+        elif len(parts) > 2 and parts[2] in CLASSES:
+            class_name = parts[2]
+            bbox_start = 6
+        else:
+            print(f"Could not find class in line: {line.strip()[:50]}...")
+            continue
+        
+        if class_name not in CLASSES:
+            continue
+        
+        class_id = CLASSES[class_name]
+        
+        try:
+            xmin = float(parts[bbox_start])
+            ymin = float(parts[bbox_start + 1])
+            xmax = float(parts[bbox_start + 2])
+            ymax = float(parts[bbox_start + 3])
+        except (IndexError, ValueError) as e:
+            print(f"Invalid bbox in: {line.strip()[:50]}... - {e}")
+            continue
+        
+        x_center = ((xmin + xmax) / 2) / img_width
+        y_center = ((ymin + ymax) / 2) / img_height
+        width = (xmax - xmin) / img_width
+        height = (ymax - ymin) / img_height
+        
+        x_center = max(0, min(1, x_center))
+        y_center = max(0, min(1, y_center))
+        width = max(0, min(1, width))
+        height = max(0, min(1, height))
+        
+        yolo_labels.append(
+            f"{class_id} {x_center:.6f} {y_center:.6f} {width:.6f} {height:.6f}\n"
+        )
+    
+    with open(yolo_label_path, 'w') as f:
+        f.writelines(yolo_labels)
+    
+    return len(yolo_labels)
+
+def convert_dataset(kitti_labels_dir, yolo_labels_dir, img_width=1242, img_height=375):
+    """
+    Converts all KITTI label files in a directory to YOLO format.
+    """
+    os.makedirs(yolo_labels_dir, exist_ok=True)
+    
+    kitti_files = list(Path(kitti_labels_dir).glob('*.txt'))
+    print(f"Found {len(kitti_files)} files in {kitti_labels_dir}")
+    
+    total_labels = 0
+    for kitti_file in kitti_files:
+        yolo_file = Path(yolo_labels_dir) / kitti_file.name
+        num_labels = convert_kitti_to_yolo(str(kitti_file), str(yolo_file), img_width, img_height)
+        total_labels += num_labels
+        
+        if num_labels > 0:
+            print(f"✓ {kitti_file.name}: {num_labels} labels")
+        else:
+            print(f"⚠ {kitti_file.name}: 0 labels (empty)")
+
+    print(f"\nDone! Converted {total_labels} labels to: {yolo_labels_dir}")
+
+if __name__ == "__main__":
+    VAL2_KITTI = r"C:\Users\emilt\Desktop\train_yolo_55\val\labels_val_2"
+    VAL2_YOLO  = r"C:\Users\emilt\Desktop\train_yolo_55\val\Yolo_valset_2"
+    
+    print("\n" + "="*60)
+    print("Converting validation set 2...")
+    print("="*60)
+    convert_dataset(VAL2_KITTI, VAL2_YOLO, img_width=1242, img_height=375)
+    
+    print("\n" + "="*60)
+    print("✓✓ All validation labels converted!")
+    print("="*60)

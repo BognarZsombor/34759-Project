@@ -1,0 +1,37 @@
+import os
+
+input_dir = r"C:\Users\emilt\Desktop\DTU\Semester 2\34759 Perception for Autonomous Systems\Final Project\dataset\data_object_data\training\label"
+output_dir = r"C:\Users\emilt\Desktop\DTU\Semester 2\34759 Perception for Autonomous Systems\Final Project\dataset\data_object_data\training\labels"
+os.makedirs(output_dir, exist_ok=True)
+
+ignore_classes = {"DontCare", "Misc", "Tram", "Person_sitting"}
+merge_to_car = {"Truck", "Van"}
+
+for filename in os.listdir(input_dir):
+    if not filename.endswith(".txt"):
+        continue
+
+    input_path = os.path.join(input_dir, filename)
+    output_path = os.path.join(output_dir, filename)
+
+    cleaned_lines = []
+    with open(input_path, "r") as f:
+        for line in f:
+            if not line.strip():
+                continue
+
+            parts = line.strip().split()
+            obj_type = parts[0]
+
+            if obj_type in ignore_classes:
+                continue
+
+            if obj_type in merge_to_car:
+                parts[0] = "Car"
+
+            cleaned_lines.append(" ".join(parts))
+
+    with open(output_path, "w") as out:
+        out.write("\n".join(cleaned_lines))
+
+print(f"Done! Cleaned files saved to: {output_dir}")
