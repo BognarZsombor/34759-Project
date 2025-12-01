@@ -50,7 +50,7 @@ sequences = [
             r"\34759_final_project_rect\seq_02\image_03\data"
         ),
         "start": 0,
-        "end": 205,
+        "end": 208,
         "step": 1,           # set to 1 if you want every frame
         "fmt": "{:010d}.png",
     },
